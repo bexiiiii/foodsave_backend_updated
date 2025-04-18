@@ -2,6 +2,9 @@ package foodsave.com.foodsave.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "app_user")  // Переименовываем таблицу на "app_user" или другое имя
@@ -10,8 +13,13 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @NotBlank(message = "Имя пользователя не может быть пустым.")
+    @Size(min = 3, max = 20, message = "Имя пользователя должно быть от 3 до 20 символов.")
     private String name;
+    @Email(message = "Некорректный формат email.")
     private String email;
+    @NotBlank(message = "Пароль не может быть пустым.")
+    @Size(min = 8, message = "Пароль должен быть хотя бы 8 символов.")
     private String password;
 
     // Getters and Setters

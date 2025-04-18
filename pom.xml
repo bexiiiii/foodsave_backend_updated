@@ -50,6 +50,11 @@
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>1.6.9</version> <!-- или последняя версия -->
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
 
 		<dependency>
 

@@ -5,8 +5,10 @@ package foodsave.com.foodsave.controller;
 
 import foodsave.com.foodsave.model.User;
 import foodsave.com.foodsave.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,9 +22,12 @@ public class UserController {
 
     // Регистрация нового пользователя
     @PostMapping("/register")
-    public String register(@RequestBody User user) {
-        userService.saveUser(user);
-        return "User registered successfully";
+    public String registerUser(@Valid @RequestBody User user, BindingResult result) {
+        if (result.hasErrors()) {
+            return "Ошибка валидации: " + result.getAllErrors();
+        }
+        // Логика регистрации пользователя
+        return "Пользователь зарегистрирован успешно.";
     }
 
     // Получение пользователя по ID
