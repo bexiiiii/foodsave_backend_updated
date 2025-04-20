@@ -21,6 +21,7 @@ public class User {
     @NotBlank(message = "Пароль не может быть пустым.")
     @Size(min = 8, message = "Пароль должен быть хотя бы 8 символов.")
     private String password;
+    private String username;
 
     // Getters and Setters
     public Long getId() {
@@ -53,5 +54,12 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+    public void setUsername(String username) {
+        this.username = username;
     }
 }
