@@ -16,10 +16,18 @@ public class Product {
     private Double price;
     private String category;
     private String description;
+    private String imageUrl;  // Путь к изображению
 
     @ManyToOne
     private Discount discount; // Связь с сущностью Discount
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
     // Getters and Setters
     public Long getId() {
         return id;

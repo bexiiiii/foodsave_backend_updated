@@ -5,6 +5,14 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
+
+
+@NoArgsConstructor
+@AllArgsConstructor
 
 @Entity
 @Table(name = "app_user")  // Переименовываем таблицу на "app_user" или другое имя
@@ -22,6 +30,15 @@ public class User {
     @Size(min = 8, message = "Пароль должен быть хотя бы 8 символов.")
     private String password;
     private String username;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+
+    public User(Long userId) {
+    }
+
 
     // Getters and Setters
     public Long getId() {
@@ -62,4 +79,9 @@ public class User {
     public void setUsername(String username) {
         this.username = username;
     }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+
 }

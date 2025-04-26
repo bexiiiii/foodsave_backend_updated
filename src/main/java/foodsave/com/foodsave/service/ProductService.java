@@ -71,6 +71,16 @@ public class ProductService {
     public List<Review> getReviewsByProductId(Long productId) {
         return reviewRepository.findByProductId(productId); // Получить отзывы по ID продукта
     }
+    // Метод для обновления изображения для продукта
+    public Product updateProductImage(Long productId, String imageUrl) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        product.setImageUrl(imageUrl);  // Обновляем поле imageUrl
+
+        return productRepository.save(product);  // Сохраняем изменения
+    }
+
 
 
 
