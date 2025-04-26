@@ -1,14 +1,13 @@
-# Используем официальный образ Java 17
-FROM eclipse-temurin:17-jdk
-
-# Создаем директорию для приложения
+# Этап 1: Сборка приложения
+FROM maven:3.9.5-eclipse-temurin-17 AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Копируем собранный jar-файл в контейнер
-COPY target/*.jar app.jar
-
-# Открываем порт 8080
+# Этап 2: Запуск приложения
+FROM eclipse-temurin:17-jdk
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-
-# Команда для запуска приложения
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]
