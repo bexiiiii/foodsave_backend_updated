@@ -4,6 +4,8 @@ import foodsave.com.foodsave.config.JwtTokenProvider;
 import foodsave.com.foodsave.model.User;
 import foodsave.com.foodsave.repository.UserRepository;
 import foodsave.com.foodsave.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +23,20 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:9527/")
 
 
+
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Пользователи", description = "Операции с пользователями (регистрация, логин)")
 public class UserController {
+
 
     @Autowired
     private UserService userService;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Operation(summary = "Регистрация нового пользователя")
 
     // Register new user
     @PostMapping("/register")
