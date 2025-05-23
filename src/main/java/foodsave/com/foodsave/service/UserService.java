@@ -2,17 +2,33 @@ package foodsave.com.foodsave.service;
 
 import foodsave.com.foodsave.config.JwtTokenProvider;
 import foodsave.com.foodsave.model.User;
+import foodsave.com.foodsave.model.Product;
 import foodsave.com.foodsave.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import foodsave.com.foodsave.repository.ProductRepository;
+
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class UserService {
-
     @Autowired
-    private UserRepository userRepository;
+    private ProductRepository productRepository;
+
+
+    private final UserRepository userRepository;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -20,61 +36,163 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Сохранение пользователя с хешированием пароля
-    public User saveUser(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword())); // хешируем пароль
-        return userRepository.save(user);
-    }
-    // UserService.java
-
-
-
     public List<User> findAllUsers() {
         return userRepository.findAll();
     }
 
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
 
-    // Поиск пользователя по email
-    public User findByEmail(String email) {
+    public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
-    // Поиск пользователя по username
-    public User findByUsername(String username) {
+    public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
-    // Аутентификация пользователя
-    public User loginUser(String username, String rawPassword) {
-        User user = findByUsername(username);
-
-        if (user == null || !passwordEncoder.matches(rawPassword, user.getPassword())) {
-            return null;
+    public User saveUser(User user) {
+        if (user.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-
-        return user;
+        return userRepository.save(user);
     }
 
-    // Обновление пользователя (с новым паролем — тоже шифруем)
-    public User updateUser(Long id, User updatedUser) {
-        User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        existingUser.setName(updatedUser.getName());
-        existingUser.setEmail(updatedUser.getEmail());
-        existingUser.setUsername(updatedUser.getUsername());
-
-        // Шифруем новый пароль перед сохранением
-        existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
-
-        return userRepository.save(existingUser);
+    public Optional<User> createUser(User user) {
+        if (userRepository.existsByEmail(user.getEmail())) {
+            return Optional.empty();
+        }
+        if (userRepository.existsByUsername(user.getUsername())) {
+            return Optional.empty();
+        }
+        return Optional.of(saveUser(user));
     }
 
-    // Удаление пользователя
+    public Optional<User> updateUser(Long id, User userDetails) {
+        return userRepository.findById(id)
+            .map(existingUser -> {
+                existingUser.setFirstName(userDetails.getFirstName());
+                existingUser.setLastName(userDetails.getLastName());
+                existingUser.setEmail(userDetails.getEmail());
+                existingUser.setUsername(userDetails.getUsername());
+                existingUser.setPhone(userDetails.getPhone());
+                existingUser.setBio(userDetails.getBio());
+                existingUser.setCountry(userDetails.getCountry());
+                existingUser.setCity(userDetails.getCity());
+                existingUser.setPostalCode(userDetails.getPostalCode());
+                existingUser.setTaxId(userDetails.getTaxId());
+                existingUser.setFacebookLink(userDetails.getFacebookLink());
+                existingUser.setTwitterLink(userDetails.getTwitterLink());
+                existingUser.setLinkedinLink(userDetails.getLinkedinLink());
+                existingUser.setInstagramLink(userDetails.getInstagramLink());
+                
+                if (userDetails.getPassword() != null) {
+                    existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+                }
+                return userRepository.save(existingUser);
+            });
+    }
+
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found");
-        }
         userRepository.deleteById(id);
     }
+
+    public Optional<User> loginUser(String username, String password) {
+        return userRepository.findByUsername(username)
+            .filter(user -> passwordEncoder.matches(password, user.getPassword()));
+    }
+
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    public List<User> findByStoreId(Long storeId) {
+        return userRepository.findByStoreId(storeId);
+    }
+
+    public List<User> findActiveUsers() {
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        return userRepository.findByLastLoginAfter(thirtyDaysAgo);
+    }
+
+    public List<User> findNewUsers() {
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        return userRepository.findByCreatedAtAfter(thirtyDaysAgo);
+    }
+
+    public Map<String, Object> getUserStats() {
+        Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalUsers", userRepository.count());
+        stats.put("activeUsers", userRepository.countByLastLoginAfter(LocalDateTime.now().minusDays(30)));
+        stats.put("newUsers", userRepository.countByCreatedAtAfter(LocalDateTime.now().minusDays(30)));
+        return stats;
+    }
+
+    @Transactional
+    public User update(User user) {
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    public Optional<User> getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(username);
+    }
+
+    @Transactional
+    public void activateUser(Long id) {
+        userRepository.findById(id).ifPresent(user -> {
+            user.setActive(true);
+            userRepository.save(user);
+        });
+    }
+
+    @Transactional
+    public void deactivateUser(Long id) {
+        userRepository.findById(id).ifPresent(user -> {
+            user.setActive(false);
+            userRepository.save(user);
+        });
+    }
+
+    public List<User> searchUsers(String query) {
+        return userRepository.findByFirstNameContainingOrLastNameContainingOrEmailContaining(query, query, query);
+    }
+
+    public List<User> filterUsers(Map<String, String> filters) {
+        // Implement filtering logic based on the provided filters
+        return userRepository.findAll();
+    }
+
+    public List<Map<String, Object>> getUserOrders(Long userId) {
+        return userRepository.findUserOrders(userId);
+    }
+
+    @Transactional
+    public void addToFavorites(Long userId, Long productId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Product product = productRepository.findById(productId).orElseThrow();
+        user.getFavorites().add(product);
+        userRepository.save(user);
+    }
+
+    public Set<Product> getUserFavorites(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getFavorites();
+    }
+
+    @Transactional
+    public void removeFromFavorites(Long userId, Long productId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Product product = productRepository.findById(productId).orElseThrow(() -> new RuntimeException("Product not found"));
+        user.getFavorites().remove(product);
+        userRepository.save(user);
+    }
+
+
 }

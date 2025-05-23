@@ -15,6 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
@@ -31,39 +34,49 @@ public class ProductController {
     // Получение списка всех продуктов
     @GetMapping
     public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+        return productService.findAll();
     }
 
     // Получение продукта по ID
     @GetMapping("/{id}")
-    public Product getProductById(@PathVariable Long id) {
-        return productService.findById(id);
+    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+        return productService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Добавление нового продукта
     @PostMapping
-    public Product createProduct(@RequestBody Product product) {
-        return productService.saveProduct(product);
+    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        return ResponseEntity.ok(productService.saveProduct(product));
     }
 
     // Обновление данных продукта
     @PutMapping("/{id}")
-    public Product updateProduct(@PathVariable Long id, @RequestBody Product product) {
-        product.setId(id); // Устанавливаем ID для обновления
-        return productService.saveProduct(product);
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+        return productService.findById(id)
+                .map(existingProduct -> {
+                    product.setId(id);
+                    return ResponseEntity.ok(productService.saveProduct(product));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Удаление продукта
     @DeleteMapping("/{id}")
-    public String deleteProduct(@PathVariable Long id) {
-        productService.saveProduct(new Product()); // Логика удаления, добавим позже
-        return "Product deleted successfully";
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        return productService.findById(id)
+                .map(product -> {
+                    productService.deleteById(id);
+                    return ResponseEntity.ok().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Поиск продуктов по ключевому слову
     @GetMapping("/search")
-    public ResponseEntity<List<Product>> searchProducts(@RequestParam String query) {
-        return ResponseEntity.ok(productService.searchProducts(query));
+    public List<Product> searchProducts(@RequestParam String query) {
+        return productService.findByName(query);
     }
 
     // Получение отзывов для продукта
@@ -93,7 +106,7 @@ public class ProductController {
 
             // Сохраняем путь к изображению в базе данных
             String imageUrl = UPLOAD_DIR + file.getOriginalFilename();
-            Product product = productService.findById(productId);
+            Product product = productService.findById(productId).orElse(null);
             if (product != null) {
                 product.setImageUrl(imageUrl);
                 productService.saveProduct(product); // Обновляем продукт с новым путем к изображению
@@ -105,5 +118,70 @@ public class ProductController {
         } catch (IOException e) {
             return new ResponseEntity<>("Error saving the file", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/category/{category}")
+    public List<Product> getProductsByCategory(@PathVariable String category) {
+        return productService.findByCategory(category);
+    }
+
+    @GetMapping("/store/{storeId}")
+    public List<Product> getProductsByStore(@PathVariable Long storeId) {
+        return productService.findByStoreId(storeId);
+    }
+
+    @GetMapping("/store/{storeId}/top-selling")
+    public ResponseEntity<List<Map<String, Object>>> getTopSellingProducts(@PathVariable Long storeId) {
+        List<Object[]> results = productService.getTopSellingProducts(storeId);
+        List<Map<String, Object>> response = results.stream()
+                .map(row -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("productId", row[0]);
+                    map.put("productName", row[1]);
+                    map.put("totalQuantity", row[2]);
+                    return map;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/store/{storeId}/low-stock")
+    public List<Product> getLowStockProducts(@PathVariable Long storeId) {
+        return productService.getLowStockProducts(storeId);
+    }
+
+    @GetMapping("/store/{storeId}/discounted")
+    public List<Product> getDiscountedProducts(@PathVariable Long storeId) {
+        return productService.findDiscountedProducts(storeId);
+    }
+
+    @GetMapping("/top-by-revenue")
+    public ResponseEntity<List<Map<String, Object>>> getTopProductsByRevenue() {
+        List<Object[]> results = productService.getTopProductsByRevenue();
+        List<Map<String, Object>> response = results.stream()
+                .map(row -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("productId", row[0]);
+                    map.put("productName", row[1]);
+                    map.put("totalRevenue", row[2]);
+                    return map;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/top-by-quantity")
+    public ResponseEntity<List<Map<String, Object>>> getTopProductsByQuantity() {
+        List<Object[]> results = productService.getTopProductsByQuantity();
+        List<Map<String, Object>> response = results.stream()
+                .map(row -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("productId", row[0]);
+                    map.put("productName", row[1]);
+                    map.put("totalQuantity", row[2]);
+                    return map;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 }

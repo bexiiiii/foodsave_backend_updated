@@ -8,10 +8,13 @@ import foodsave.com.foodsave.repository.ProductRepository;
 import foodsave.com.foodsave.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@Transactional
 public class ProductService {
 
     @Autowired
@@ -20,14 +23,12 @@ public class ProductService {
     @Autowired
     private ReviewRepository reviewRepository;
 
+    @Autowired
+    private DiscountRepository discountRepository;
+
     // Сохранение нового продукта
     public Product saveProduct(Product product) {
         return productRepository.save(product);
-    }
-
-    // Получение продукта по названию
-    public Product findByName(String name) {
-        return productRepository.findByName(name);
     }
 
     // Получение всех продуктов
@@ -35,9 +36,22 @@ public class ProductService {
         return productRepository.findAll();
     }
 
+    public List<Product> findAll() {
+        return productRepository.findAll();
+    }
+
     // Поиск продукта по ID
-    public Product findById(Long id) {
-        return productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+    public Optional<Product> findById(Long id) {
+        return productRepository.findById(id);
+    }
+
+    // Поиск продуктов по названию
+    public List<Product> findByName(String name) {
+        return productRepository.findByNameContaining(name);
+    }
+
+    public List<Product> searchProducts(String query) {
+        return productRepository.findByNameContaining(query);
     }
 
     // Обновление продукта
@@ -45,7 +59,6 @@ public class ProductService {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        // Обновление данных продукта
         existingProduct.setName(updatedProduct.getName());
         existingProduct.setPrice(updatedProduct.getPrice());
         existingProduct.setCategory(updatedProduct.getCategory());
@@ -62,36 +75,68 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    // Поиск продуктов по ключевому слову
-    public List<Product> searchProducts(String query) {
-        return productRepository.findByNameContaining(query); // Поищет по имени
+    public void deleteById(Long id) {
+        productRepository.deleteById(id);
     }
 
-    // Получение отзывов для продукта
-    public List<Review> getReviewsByProductId(Long productId) {
-        return reviewRepository.findByProductId(productId); // Получить отзывы по ID продукта
-    }
-    // Метод для обновления изображения для продукта
+    // Обновление изображения продукта
     public Product updateProductImage(Long productId, String imageUrl) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
-
-        product.setImageUrl(imageUrl);  // Обновляем поле imageUrl
-
-        return productRepository.save(product);  // Сохраняем изменения
-    }
-
-
-
-
-    @Autowired
-    private DiscountRepository discountRepository;
-
-    // Применение скидки к продукту
-    public Product applyDiscount(Long id, Discount discount) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
-        product.setDiscount(discount); // Устанавливаем скидку на продукт
+        product.setImageUrl(imageUrl);
         return productRepository.save(product);
     }
 
+    // Получение отзывов по продукту
+    public List<Review> getReviewsByProductId(Long productId) {
+        return reviewRepository.findByProductId(productId);
+    }
+
+    // Применение скидки к продукту
+    public Product applyDiscount(Long id, Discount discount) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        product.setDiscount(discount);
+        return productRepository.save(product);
+    }
+
+    // Поиск по категории
+    public List<Product> findByCategory(String category) {
+        return productRepository.findByCategory(category);
+    }
+
+    // Поиск по магазину
+    public List<Product> findByStoreId(Long storeId) {
+        return productRepository.findByStoreId(storeId);
+    }
+
+    // Продукты с низким остатком (например, < 10)
+    public List<Product> findLowStockProducts(Long storeId) {
+        return productRepository.findByStoreIdAndStockQuantityLessThan(storeId, 10);
+    }
+
+    // Продукты со скидкой (discount != null)
+    public List<Product> findDiscountedProducts(Long storeId) {
+        return productRepository.findByStoreIdAndDiscountIsNotNull(storeId);
+    }
+
+    // ⚠️ Методы, которые использовали агрегаты и JPQL — временно закомментированы или требуют отдельной реализации через EntityManager
+    // public List<Object[]> getTopProductsByRevenue() { ... }
+    // public List<Object[]> getTopProductsByQuantity() { ... }
+
+    public List<Object[]> getTopSellingProducts(Long storeId) {
+        return productRepository.findTopSellingProducts(storeId);
+    }
+
+    public List<Product> getLowStockProducts(Long storeId) {
+        return productRepository.findByStoreIdAndStockQuantityLessThan(storeId, 10);
+    }
+
+    public List<Object[]> getTopProductsByRevenue() {
+        return productRepository.findTopProductsByRevenue();
+    }
+
+    public List<Object[]> getTopProductsByQuantity() {
+        return productRepository.findTopProductsByQuantity();
+    }
 }

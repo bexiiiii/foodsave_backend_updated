@@ -1,52 +1,109 @@
 package foodsave.com.foodsave.model;
 
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import java.time.LocalDateTime;
 
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "discounts")
 public class Discount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Double discountValue; // Скидка в процентах
-    private String startDate; // Дата начала скидки
-    private String endDate; // Дата окончания скидки
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
+    @Column(name = "type")
+    private String type;
+
+    @Column(name = "value")
+    private Double value;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+
+    @Column(name = "end_date")
+    private LocalDateTime endDate;
+
+    @Column(name = "is_active")
+    private Boolean isActive;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    private Double percentage;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public Double getDiscountValue() {
-        return discountValue;
+    public String getType() {
+        return type;
     }
 
-    public void setDiscountValue(Double discountValue) {
-        this.discountValue = discountValue;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public String getStartDate() {
+    public Double getValue() {
+        return value;
+    }
+
+    public void setValue(Double value) {
+        this.value = value;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public LocalDateTime getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(String startDate) {
+    public void setStartDate(LocalDateTime startDate) {
         this.startDate = startDate;
     }
 
-    public String getEndDate() {
+    public LocalDateTime getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(String endDate) {
+    public void setEndDate(LocalDateTime endDate) {
         this.endDate = endDate;
+    }
+
+    public boolean isActive() {
+        LocalDateTime now = LocalDateTime.now();
+        return (startDate == null || !now.isBefore(startDate)) &&
+                (endDate == null || !now.isAfter(endDate));
+    }
+
+
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
     }
 }
 
