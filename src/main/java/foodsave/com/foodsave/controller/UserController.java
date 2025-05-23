@@ -43,29 +43,41 @@ public class UserController {
         try {
             // Log incoming request
             System.out.println("Received registration request for email: " + user.getEmail());
+            System.out.println("Request body: " + user.toString());
 
             // Validate required fields
             if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Email is required");
+                System.out.println("Email is missing");
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Email is required"));
             }
             if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Password is required");
+                System.out.println("Password is missing");
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Password is required"));
             }
             if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("First name is required");
+                System.out.println("First name is missing");
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "First name is required"));
             }
             if (user.getLastName() == null || user.getLastName().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Last name is required");
+                System.out.println("Last name is missing");
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Last name is required"));
             }
 
             // Check if user already exists
             if (userService.findByEmail(user.getEmail()).isPresent()) {
-                return ResponseEntity.badRequest().body("User with this email already exists");
+                System.out.println("User with email " + user.getEmail() + " already exists");
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "User with this email already exists"));
             }
 
             // Set default values for optional fields
             if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
                 user.setUsername(user.getEmail().split("@")[0]);
+                System.out.println("Setting default username: " + user.getUsername());
             }
 
             // Log user details before saving
@@ -74,16 +86,21 @@ public class UserController {
             System.out.println("Username: " + user.getUsername());
             System.out.println("First Name: " + user.getFirstName());
             System.out.println("Last Name: " + user.getLastName());
+            System.out.println("Role: " + (user.getRole() != null ? user.getRole().getName() : "null"));
 
             // Save user
             User savedUser = userService.saveUser(user);
             System.out.println("User saved successfully with ID: " + savedUser.getId());
 
-            return ResponseEntity.ok(savedUser);
+            return ResponseEntity.ok(Map.of(
+                "message", "User registered successfully",
+                "user", savedUser
+            ));
         } catch (Exception e) {
             System.err.println("Error during user registration: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Failed to register user: " + e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Failed to register user: " + e.getMessage()));
         }
     }
 
