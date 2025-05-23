@@ -40,35 +40,49 @@ public class UserController {
     // Register new user
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        // Validate required fields
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Email is required");
-        }
-        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Password is required");
-        }
-        if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("First name is required");
-        }
-        if (user.getLastName() == null || user.getLastName().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Last name is required");
-        }
-
-        // Check if user already exists
-        if (userService.findByEmail(user.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("User with this email already exists");
-        }
-
-        // Set default values for optional fields
-        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-            user.setUsername(user.getEmail().split("@")[0]);
-        }
-
-        // Save user
         try {
+            // Log incoming request
+            System.out.println("Received registration request for email: " + user.getEmail());
+
+            // Validate required fields
+            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Email is required");
+            }
+            if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Password is required");
+            }
+            if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("First name is required");
+            }
+            if (user.getLastName() == null || user.getLastName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Last name is required");
+            }
+
+            // Check if user already exists
+            if (userService.findByEmail(user.getEmail()).isPresent()) {
+                return ResponseEntity.badRequest().body("User with this email already exists");
+            }
+
+            // Set default values for optional fields
+            if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+                user.setUsername(user.getEmail().split("@")[0]);
+            }
+
+            // Log user details before saving
+            System.out.println("Saving user with details:");
+            System.out.println("Email: " + user.getEmail());
+            System.out.println("Username: " + user.getUsername());
+            System.out.println("First Name: " + user.getFirstName());
+            System.out.println("Last Name: " + user.getLastName());
+
+            // Save user
             User savedUser = userService.saveUser(user);
+            System.out.println("User saved successfully with ID: " + savedUser.getId());
+
             return ResponseEntity.ok(savedUser);
         } catch (Exception e) {
+            System.err.println("Error during user registration: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Failed to register user: " + e.getMessage());
         }
     }

@@ -19,6 +19,7 @@ import java.util.Set;
 
 import foodsave.com.foodsave.repository.ProductRepository;
 import foodsave.com.foodsave.model.Role;
+import foodsave.com.foodsave.repository.RoleRepository;
 
 
 @Service
@@ -36,6 +37,9 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     public List<User> findAllUsers() {
         return userRepository.findAll();
@@ -60,9 +64,17 @@ public class UserService {
         
         // Set default role if not provided
         if (user.getRole() == null) {
-            Role role = new Role();
-            role.setName(Role.ERole.ROLE_USER);
-            user.setRole(role);
+            // Try to find existing ROLE_USER
+            Optional<Role> userRole = roleRepository.findByName(Role.ERole.ROLE_USER);
+            if (userRole.isPresent()) {
+                user.setRole(userRole.get());
+            } else {
+                // Create new ROLE_USER if it doesn't exist
+                Role role = new Role();
+                role.setName(Role.ERole.ROLE_USER);
+                role = roleRepository.save(role);
+                user.setRole(role);
+            }
         }
         
         // Set username if not provided
