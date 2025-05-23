@@ -75,10 +75,19 @@ public class UserService {
                 role = roleRepository.save(role);
                 user.setRole(role);
             }
+        } else {
+            // If role is provided, make sure it exists in the database
+            Optional<Role> existingRole = roleRepository.findByName(user.getRole().getName());
+            if (existingRole.isPresent()) {
+                user.setRole(existingRole.get());
+            } else {
+                Role savedRole = roleRepository.save(user.getRole());
+                user.setRole(savedRole);
+            }
         }
         
         // Set username if not provided
-        if (user.getUsername() == null) {
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             user.setUsername(user.getEmail().split("@")[0]);
         }
         

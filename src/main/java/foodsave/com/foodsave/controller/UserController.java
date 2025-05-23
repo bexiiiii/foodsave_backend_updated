@@ -39,68 +39,69 @@ public class UserController {
 
     // Register new user
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> request) {
         try {
-            // Log incoming request
-            System.out.println("Received registration request for email: " + user.getEmail());
-            System.out.println("Request body: " + user.toString());
+            log.info("Received registration request for email: {}", request.get("email"));
 
             // Validate required fields
-            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                System.out.println("Email is missing");
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Email is required"));
+            if (request.get("email") == null || request.get("email").trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
             }
-            if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-                System.out.println("Password is missing");
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Password is required"));
+            if (request.get("password") == null || request.get("password").trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Password is required"));
             }
-            if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
-                System.out.println("First name is missing");
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "First name is required"));
+            if (request.get("firstName") == null || request.get("firstName").trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "First name is required"));
             }
-            if (user.getLastName() == null || user.getLastName().trim().isEmpty()) {
-                System.out.println("Last name is missing");
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Last name is required"));
+            if (request.get("lastName") == null || request.get("lastName").trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Last name is required"));
             }
 
             // Check if user already exists
-            if (userService.findByEmail(user.getEmail()).isPresent()) {
-                System.out.println("User with email " + user.getEmail() + " already exists");
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "User with this email already exists"));
+            if (userService.findByEmail(request.get("email")).isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email is already registered"));
             }
 
-            // Set default values for optional fields
-            if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-                user.setUsername(user.getEmail().split("@")[0]);
-                System.out.println("Setting default username: " + user.getUsername());
+            // Create new user
+            User user = new User();
+            user.setEmail(request.get("email").trim());
+            user.setPassword(request.get("password"));
+            user.setFirstName(request.get("firstName").trim());
+            user.setLastName(request.get("lastName").trim());
+            user.setUsername(request.get("username") != null ? request.get("username").trim() : request.get("email").split("@")[0]);
+            user.setStatus(User.EStatus.ACTIVE);
+
+            // Handle role
+            String roleName = request.get("roleName");
+            if (roleName == null) {
+                roleName = "ROLE_USER";
             }
+            Role role = roleService.findByName(Role.ERole.valueOf(roleName))
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName(Role.ERole.valueOf(roleName));
+                    return roleService.save(newRole);
+                });
+            user.setRole(role);
 
-            // Log user details before saving
-            System.out.println("Saving user with details:");
-            System.out.println("Email: " + user.getEmail());
-            System.out.println("Username: " + user.getUsername());
-            System.out.println("First Name: " + user.getFirstName());
-            System.out.println("Last Name: " + user.getLastName());
-            System.out.println("Role: " + (user.getRole() != null ? user.getRole().getName() : "null"));
-
-            // Save user
+            log.info("Saving user with email: {}", user.getEmail());
             User savedUser = userService.saveUser(user);
-            System.out.println("User saved successfully with ID: " + savedUser.getId());
+            log.info("User registered successfully with ID: {}", savedUser.getId());
 
             return ResponseEntity.ok(Map.of(
                 "message", "User registered successfully",
-                "user", savedUser
+                "user", Map.of(
+                    "id", savedUser.getId(),
+                    "email", savedUser.getEmail(),
+                    "firstName", savedUser.getFirstName(),
+                    "lastName", savedUser.getLastName(),
+                    "username", savedUser.getUsername(),
+                    "role", savedUser.getRole().getName().toString()
+                )
             ));
         } catch (Exception e) {
-            System.err.println("Error during user registration: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest()
-                .body(Map.of("error", "Failed to register user: " + e.getMessage()));
+            log.error("Error registering user: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
