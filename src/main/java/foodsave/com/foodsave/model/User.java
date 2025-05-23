@@ -96,6 +96,9 @@ public class User implements UserDetails {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.username == null) {
+            this.username = this.email.split("@")[0];
+        }
     }
 
     @PreUpdate

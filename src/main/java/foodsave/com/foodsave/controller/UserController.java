@@ -40,15 +40,37 @@ public class UserController {
     // Register new user
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
+        // Validate required fields
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email is required");
+        }
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Password is required");
+        }
+        if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("First name is required");
+        }
+        if (user.getLastName() == null || user.getLastName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Last name is required");
+        }
+
+        // Check if user already exists
         if (userService.findByEmail(user.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body("User with this email already exists");
         }
-        if (userService.findByUsername(user.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("User with this username already exists");
+
+        // Set default values for optional fields
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            user.setUsername(user.getEmail().split("@")[0]);
         }
 
-        User savedUser = userService.saveUser(user);
-        return ResponseEntity.ok(savedUser);
+        // Save user
+        try {
+            User savedUser = userService.saveUser(user);
+            return ResponseEntity.ok(savedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to register user: " + e.getMessage());
+        }
     }
 
     @Component

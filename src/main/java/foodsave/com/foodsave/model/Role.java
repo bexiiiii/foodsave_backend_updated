@@ -21,6 +21,7 @@ public class Role {
 
     public enum ERole {
         ROLE_ADMIN,
-        ROLE_STORE
+        ROLE_STORE,
+        ROLE_USER
     }
 } 

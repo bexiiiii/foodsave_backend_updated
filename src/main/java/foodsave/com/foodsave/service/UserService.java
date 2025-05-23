@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import foodsave.com.foodsave.repository.ProductRepository;
+import foodsave.com.foodsave.model.Role;
 
 
 @Service
@@ -56,6 +57,19 @@ public class UserService {
         if (user.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
+        
+        // Set default role if not provided
+        if (user.getRole() == null) {
+            Role role = new Role();
+            role.setName(Role.ERole.ROLE_USER);
+            user.setRole(role);
+        }
+        
+        // Set username if not provided
+        if (user.getUsername() == null) {
+            user.setUsername(user.getEmail().split("@")[0]);
+        }
+        
         return userRepository.save(user);
     }
 
